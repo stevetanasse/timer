@@ -1,4 +1,4 @@
-# ACA Timer
+# Timer
 
 A countdown timer web app. It is a learning project for Docker and Azure Container Apps.
 The full behavior is in docs/SPEC.md, which is the source of truth. If a request conflicts with it, stop and ask.

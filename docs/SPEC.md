@@ -1,4 +1,4 @@
-# ACA Timer – Specification
+# Timer – Specification
 
 Source of truth for the app. Copied from the "Decisions and environment" and "Functional specification" sections of docs/TICKETS.md.
 

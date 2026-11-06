@@ -1,4 +1,4 @@
-# ACA Timer
+# Timer
 
 A countdown timer web app: enter a time as `HH:MM:SS`, press Play, and the page flashes when it reaches zero.
 It is a learning project for Docker and Azure Container Apps.

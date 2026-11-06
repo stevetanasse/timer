@@ -6,7 +6,7 @@ Nov 5, 2026 · @Steve
 
 Give Claude Code one ticket per session, in order from T1 to T10. Each ticket says what it depends on, what is in and out of scope, its acceptance criteria, and a Verify step that proves it is done.
 
-1. Create an empty folder such as `C:\src\aca-timer` and start Claude Code in it.
+1. Create an empty folder such as `C:\src\timer` and start Claude Code in it.
 2. Hand it T1. T1 saves the Functional specification and Project conventions sections below into the repo as `docs/SPEC.md` and `CLAUDE.md`, so every later session reads them automatically.
 3. For each ticket, paste the whole ticket and ask Claude Code to plan first, then implement, then run the Verify step and report the results.
 4. Review the changes, then commit before starting the next ticket. One ticket = one commit (or one pull request once T10 is in place).
@@ -101,7 +101,7 @@ Validation runs when Play is clicked. Leading and trailing spaces are trimmed, t
 T1 saves this text as `CLAUDE.md` at the repo root. Claude Code reads that file at the start of every session, so these rules apply to every ticket.
 
 ```markdown
-# ACA Timer
+# Timer
 
 A countdown timer web app. It is a learning project for Docker and Azure Container Apps.
 The full behavior is in docs/SPEC.md, which is the source of truth. If a request conflicts with it, stop and ask.
@@ -162,7 +162,7 @@ These five tickets produce a finished timer that runs with `npm run dev`. Nothin
 - [ ] `npm run typecheck` and `npm run build` succeed
 - [ ] No Vite demo code remains
 
-**Your step after T1:** create an empty repository named `aca-timer` on github.com (no README or license), then ask Claude Code for the commands to add it as `origin` and push.
+**Your step after T1:** create an empty repository named `timer` on github.com (no README or license), then ask Claude Code for the commands to add it as `origin` and push.
 
 ### T2. Time parsing and formatting
 
@@ -279,7 +279,7 @@ T6 packages the finished app into a small, non-root nginx image that you run on 
   - Pin both base images to a specific version tag, never `latest`.
 - `nginx.conf`: listen on 8080; serve `dist/`; `GET /healthz` returns 200 with body `ok` and no access log; long-lived caching for hashed files in `/assets/`; `no-cache` for `index.html`; gzip on.
 - `.dockerignore`: `node_modules`, `dist`, `.git`, `infra`, `docs`, `*.md`.
-- `scripts/docker-local.ps1`: builds with `--platform linux/amd64 -t aca-timer:local`, then runs with `--rm -p 8080:8080`.
+- `scripts/docker-local.ps1`: builds with `--platform linux/amd64 -t timer:local`, then runs with `--rm -p 8080:8080`.
 - A "Run in Docker" section in `README.md`.
 
 **Out of scope:** pushing images anywhere.
@@ -303,11 +303,11 @@ These two tickets put the app on a public HTTPS URL using Azure CLI scripts that
 
 | Resource | Example name | What it is for |
 | --- | --- | --- |
-| Resource group | `rg-aca-timer` | Holds everything; deleting it removes the whole project |
+| Resource group | `rg-timer` | Holds everything; deleting it removes the whole project |
 | Container registry | `acratimer` + a unique suffix | Stores your images; the name must be globally unique, lowercase letters and digits |
-| Log Analytics workspace | `log-aca-timer` | Receives the app's console and system logs |
-| Container Apps environment | `cae-aca-timer` | The shared boundary and network that apps run in |
-| Container app | `ca-aca-timer` | Runs your image; each deployment creates a new revision |
+| Log Analytics workspace | `log-timer` | Receives the app's console and system logs |
+| Container Apps environment | `cae-timer` | The shared boundary and network that apps run in |
+| Container app | `ca-timer` | Runs your image; each deployment creates a new revision |
 
 ### T7. Provision the Azure resources
 
@@ -324,7 +324,7 @@ These two tickets put the app on a public HTTPS URL using Azure CLI scripts that
 
 - [ ] Every script sets `$ErrorActionPreference = 'Stop'` and checks `$LASTEXITCODE` after each `az` call, because `az` failures do not stop PowerShell by themselves
 - [ ] Running `01-provision.ps1` a second time succeeds and changes nothing
-- [ ] `az resource list -g rg-aca-timer -o table` shows the registry, workspace and environment
+- [ ] `az resource list -g rg-timer -o table` shows the registry, workspace and environment
 - [ ] No keys or secrets are printed or committed
 
 **Your step:** run `00-prereqs.ps1`, then `01-provision.ps1`, and look at the new resources in the Azure portal.
@@ -335,7 +335,7 @@ These two tickets put the app on a public HTTPS URL using Azure CLI scripts that
 
 **Scope**
 
-- `infra/cli/02-push-image.ps1`: `az acr login`, build with `--platform linux/amd64`, tag as `<registry>.azurecr.io/aca-timer:<git short SHA>`, push. Never rely on the `latest` tag.
+- `infra/cli/02-push-image.ps1`: `az acr login`, build with `--platform linux/amd64`, tag as `<registry>.azurecr.io/timer:<git short SHA>`, push. Never rely on the `latest` tag.
 - `infra/cli/03-deploy-app.ps1`:
   - First run creates the app with a system-assigned managed identity that pulls from the registry (`--registry-identity system`), so no registry password exists anywhere.
   - External ingress to target port 8080, 0.25 CPU and 0.5 GiB memory, minimum 0 and maximum 1 replica.
@@ -370,17 +370,17 @@ These two tickets replace the hand-run scripts with a Bicep template and a GitHu
 - Use a user-assigned managed identity that is granted `AcrPull` before the app is created. This avoids the race where a new app tries to pull before its own identity has permission.
 - Add HTTP liveness and readiness probes on `/healthz`, port 8080. The CLI deployment relied on the platform defaults.
 - A `deployApp` parameter: the first run creates only the infrastructure so you can push an image, the second run creates the app.
-- `infra/bicep/deploy.ps1`: runs `az deployment group what-if` and shows the result before `az deployment group create`. Target resource group `rg-aca-timer-bicep`.
+- `infra/bicep/deploy.ps1`: runs `az deployment group what-if` and shows the result before `az deployment group create`. Target resource group `rg-timer-bicep`.
 
 **Acceptance criteria**
 
 - [ ] `az bicep build` reports no warnings, or each remaining warning is explained
-- [ ] The app in `rg-aca-timer-bicep` passes `docs/QA.md` and `/healthz` returns `ok`
+- [ ] The app in `rg-timer-bicep` passes `docs/QA.md` and `/healthz` returns `ok`
 - [ ] The probes are visible on the app in the Azure portal
 - [ ] Running `deploy.ps1` again with no changes shows no resource changes in what-if
 - [ ] `infra/cli/config.ps1` and the README now point at the Bicep resource group
 
-**Your step:** run `deploy.ps1` twice as described, test the app, then run `99-teardown.ps1` on the original `rg-aca-timer` so only one copy remains.
+**Your step:** run `deploy.ps1` twice as described, test the app, then run `99-teardown.ps1` on the original `rg-timer` so only one copy remains.
 
 ### T10. GitHub Actions CI/CD
 
@@ -394,7 +394,7 @@ These two tickets replace the hand-run scripts with a Bicep template and a GitHu
   - Build and push the image tagged with the commit SHA; update the container app to that tag.
   - Smoke test: request `/healthz` until it returns 200, or fail the run after a time limit.
   - Write the image tag and app URL to the run summary.
-- `infra/github/setup-oidc.ps1`: creates a Microsoft Entra app registration and service principal, a federated credential for `repo:<your user>/aca-timer:ref:refs/heads/main`, and role assignments scoped to the Bicep resource group only (`AcrPush` on the registry, permission to update the app). It prints the values to add as repository variables: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`.
+- `infra/github/setup-oidc.ps1`: creates a Microsoft Entra app registration and service principal, a federated credential for `repo:<your user>/timer:ref:refs/heads/main`, and role assignments scoped to the Bicep resource group only (`AcrPush` on the registry, permission to update the app). It prints the values to add as repository variables: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`.
 
 **Acceptance criteria**
 
